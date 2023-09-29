@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/braheezy/shine-mp3/pkg/mp3"
 	"github.com/go-audio/wav"
 )
 
@@ -57,7 +58,7 @@ func main() {
 	defer out.Close()
 
 	// Create new encoder with audio settings
-	mp3Encoder := NewEncoder(wavBuffer.Format.SampleRate, wavBuffer.Format.NumChannels)
+	mp3Encoder := mp3.NewEncoder(wavBuffer.Format.SampleRate, wavBuffer.Format.NumChannels)
 
 	// Write all the data to the output file
 	mp3Encoder.Write(out, decodedData)
