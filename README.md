@@ -11,7 +11,7 @@ The code was originally developed in [this project](https://github.com/braheezy/
 The `main.go` file has simple example of reading WAV file and encoding it to MP3. It all comes down to this:
 ```go
 // Create the encoder with the sample rate and number of audio channels
-mp3Encoder := NewEncoder(wavBuffer.Format.SampleRate, wavBuffer.Format.NumChannels)
+mp3Encoder := NewEncoder(44100, 2)
 // Assuming all your audio data is in []int16 slice called decodedData, write it to a file referenced by out
 mp3Encoder.Write(out, decodedData)
 ```
