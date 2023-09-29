@@ -17,6 +17,6 @@ mp3Encoder.Write(out, decodedData)
 ```
 
 ## A Quick Comment on MP3 Encoders
-There is essentially one actively maintained MP3 encoding library: [LAME MP3](https://lame.sourceforge.io/). If you want to encode audio files to MP3 using a programming language, you use a library that provides bindings to LAME, which means users of your software must have the LAME MP3 C library installed. You might be able to work around this producing a 100% statically compiled binary and include the LAME files. However, that might prove challenging on all platforms, like Windows.
+There is essentially one actively maintained MP3 encoding library: [LAME MP3](https://lame.sourceforge.io/). If you want to encode audio files to MP3 using a programming language, you use a library that provides bindings to LAME, which means users of your software must have the LAME MP3 C library installed. You might be able to work around this by producing a 100% statically compiled binary and including the LAME files inside. However, that can prove challenging on all platforms, especially Windows.
 
-I found about the Shine MP3 encoder from this [list of alternative encoders on the LAME website](https://lame.sourceforge.io/links.php#Alternatives).
+I found about the Shine MP3 encoder from this [list of alternative encoders on the LAME website](https://lame.sourceforge.io/links.php#Alternatives). It's minimal scope made it an attractive candidate to port.
