@@ -3,41 +3,36 @@ package mp3
 
 // maxReservoirBits is called at the beginning of each granule to get the max bit
 // allowance for the current granule based on reservoir size and perceptual entropy.
-func (enc *Encoder) maxReservoirBits(pe *float64) int64 {
-	var (
-		more_bits int64
-		max_bits  int64
-		add_bits  int64
-		over_bits int64
-		mean_bits int64 = enc.meanBits
-	)
-	mean_bits /= enc.Wave.Channels
-	max_bits = mean_bits
-	if max_bits > 4095 {
-		max_bits = 4095
+func (enc *Encoder) maxReservoirBits(perceptualEntropy *float64) int64 {
+	meanBits := enc.meanBits
+
+	meanBits /= enc.Wave.Channels
+	maxBits := meanBits
+	if maxBits > 4095 {
+		maxBits = 4095
 	}
 	if enc.reservoirMaxSize == 0 {
-		return max_bits
+		return maxBits
 	}
-	more_bits = int64(*pe*3.1 - float64(mean_bits))
-	add_bits = 0
-	if more_bits > 100 {
+	moreBits := int64(*perceptualEntropy*3.1 - float64(meanBits))
+	addBits := int64(0)
+	if moreBits > 100 {
 		var frac int64 = (enc.reservoirSize * 6) / 10
-		if frac < more_bits {
-			add_bits = frac
+		if frac < moreBits {
+			addBits = frac
 		} else {
-			add_bits = more_bits
+			addBits = moreBits
 		}
 	}
-	over_bits = enc.reservoirSize - (enc.reservoirMaxSize<<3)/10 - add_bits
-	if over_bits > 0 {
-		add_bits += over_bits
+	overBits := enc.reservoirSize - (enc.reservoirMaxSize<<3)/10 - addBits
+	if overBits > 0 {
+		addBits += overBits
 	}
-	max_bits += add_bits
-	if max_bits > 4095 {
-		max_bits = 4095
+	maxBits += addBits
+	if maxBits > 4095 {
+		maxBits = 4095
 	}
-	return max_bits
+	return maxBits
 }
 
 // reservoirAdjust is called after a granule's bit allocation. It readjusts the size of
@@ -45,59 +40,64 @@ func (enc *Encoder) maxReservoirBits(pe *float64) int64 {
 func (enc *Encoder) reservoirAdjust(gi *GranuleInfo) {
 	enc.reservoirSize += int64(uint64(enc.meanBits/enc.Wave.Channels) - gi.Part2_3Length)
 }
+
+// Called after all granules in a frame have been allocated. Makes sure
+// that the reservoir size is within limits, possibly by adding stuffing
+// bits. Note that stuffing bits are added by increasing a granule's
+// part2_3_length. The bitstream formatter will detect this and write the
+// appropriate stuffing bits to the bitstream.
 func (enc *Encoder) reservoirFrameEnd() {
-	var (
-		gi            *GranuleInfo
-		gr            int64
-		ch            int64
-		ancillary_pad int64
-		stuffingBits  int64
-		over_bits     int64
-		l3_side       *SideInfo = &enc.sideInfo
-	)
-	ancillary_pad = 0
+	sideInfo := &enc.sideInfo
+
+	ancillaryPad := int64(0)
+	// just in case mean_bits is odd, this is necessary...
 	if enc.Wave.Channels == 2 && (enc.meanBits&1) != 0 {
 		enc.reservoirSize += 1
 	}
-	over_bits = enc.reservoirSize - enc.reservoirMaxSize
-	if over_bits < 0 {
-		over_bits = 0
+	overBits := enc.reservoirSize - enc.reservoirMaxSize
+	if overBits < 0 {
+		overBits = 0
 	}
-	enc.reservoirSize -= over_bits
-	stuffingBits = over_bits + ancillary_pad
-	if (func() int64 {
-		over_bits = enc.reservoirSize % 8
-		return over_bits
-	}()) != 0 {
-		stuffingBits += over_bits
-		enc.reservoirSize -= over_bits
+	enc.reservoirSize -= overBits
+	stuffingBits := overBits + ancillaryPad
+
+	// we must be byte aligned
+	overBits = enc.reservoirSize % 8
+	if overBits != 0 {
+		stuffingBits += overBits
+		enc.reservoirSize -= overBits
 	}
+
 	if stuffingBits != 0 {
-		gi = &(l3_side.Granules[0].Channels[0]).Tt
-		if gi.Part2_3Length+uint64(stuffingBits) < 4095 {
-			gi.Part2_3Length += uint64(stuffingBits)
+		// plan a: put all into the first granule
+		// This was preferred by someone designing a
+		// real-time decoder...
+		granInfo := &(sideInfo.Granules[0].Channels[0]).Tt
+		if granInfo.Part2_3Length+uint64(stuffingBits) < 4095 {
+			granInfo.Part2_3Length += uint64(stuffingBits)
 		} else {
-			for gr = 0; gr < enc.Mpeg.GranulesPerFrame; gr++ {
-				for ch = 0; ch < enc.Wave.Channels; ch++ {
-					var (
-						extraBits  int64
-						bitsThisGr int64
-						gi         *GranuleInfo = &(l3_side.Granules[gr].Channels[ch]).Tt
-					)
+			// plan b: distribute throughout the granules
+			for gr := int64(0); gr < enc.Mpeg.GranulesPerFrame; gr++ {
+				for ch := int64(0); ch < enc.Wave.Channels; ch++ {
+					granInfo := &(sideInfo.Granules[gr].Channels[ch]).Tt
 					if stuffingBits == 0 {
 						break
 					}
-					extraBits = int64(4095 - gi.Part2_3Length)
+					extraBits := int64(4095 - granInfo.Part2_3Length)
+					bitsThisGranule := int64(0)
 					if extraBits < stuffingBits {
-						bitsThisGr = extraBits
+						bitsThisGranule = extraBits
 					} else {
-						bitsThisGr = stuffingBits
+						bitsThisGranule = stuffingBits
 					}
-					gi.Part2_3Length += uint64(bitsThisGr)
-					stuffingBits -= bitsThisGr
+					granInfo.Part2_3Length += uint64(bitsThisGranule)
+					stuffingBits -= bitsThisGranule
 				}
 			}
-			l3_side.ReservoirDrain = stuffingBits
+			// If any stuffing bits remain, we elect to spill them
+			// into ancillary data. The bitstream formatter will do this if
+			// ReservoirDrain is set
+			sideInfo.ReservoirDrain = stuffingBits
 		}
 	}
 }

@@ -25,6 +25,7 @@ func (bs *bitstream) open(size int) {
 	bs.cacheBits = 32
 }
 
+// putBits writes N bits of val into the bit stream.
 func (bs *bitstream) putBits(val uint32, N uint) {
 	if bs.cacheBits > int(N) {
 		bs.cacheBits -= int(N)

@@ -48,12 +48,12 @@ type MPEG struct {
 	GranulesPerFrame   int64
 	Mode               mode
 	Bitrate            int64
-	Emph               emphasis
+	Emphasis           emphasis
 	Padding            int64
 	BitsPerFrame       int64
 	BitsPerSlot        int64
 	FracSlotsPerFrame  float64
-	Slot_lag           float64
+	SlotLag            float64
 	WholeSlotsPerFrame int64
 	BitrateIndex       int64
 	SampleRateIndex    int64
@@ -86,9 +86,9 @@ type MDCT struct {
 	CosL [18][36]int32
 }
 type Subband struct {
-	Off [2]int64
-	Fl  [32][64]int32
-	X   [2][512]int32
+	Off [MAX_CHANNELS]int64
+	Fl  [SUBBAND_LIMIT][64]int32
+	X   [MAX_CHANNELS][HAN_SIZE]int32
 }
 type GranuleInfo struct {
 	Part2_3Length         uint64
@@ -127,8 +127,10 @@ type PsyXMin struct {
 	L [MAX_GRANULES][MAX_CHANNELS][21]float64
 }
 type ScaleFactor struct {
-	L [2][2][22]int32
-	S [2][2][13][3]int32
+	// [cb]
+	L [MAX_GRANULES][MAX_CHANNELS][22]int32
+	// [window][cb]
+	S [MAX_GRANULES][MAX_CHANNELS][13][3]int32
 }
 type Encoder struct {
 	Wave             Wave
@@ -139,11 +141,11 @@ type Encoder struct {
 	meanBits         int64
 	ratio            PsyRatio
 	scaleFactor      ScaleFactor
-	buffer           [2]*int16
-	PerceptualEnergy [2][2]float64
-	l3Encoding       [2][2][GRANULE_SIZE]int64
-	l3SubbandSamples [2][3][18][32]int32
-	mdctFrequency    [2][2][GRANULE_SIZE]int32
+	buffer           [MAX_CHANNELS]*int16
+	PerceptualEnergy [MAX_CHANNELS][MAX_GRANULES]float64
+	l3Encoding       [MAX_CHANNELS][MAX_GRANULES][GRANULE_SIZE]int64
+	l3SubbandSamples [MAX_CHANNELS][MAX_GRANULES + 1][18][SUBBAND_LIMIT]int32
+	mdctFrequency    [MAX_CHANNELS][MAX_GRANULES][GRANULE_SIZE]int32
 	reservoirSize    int64
 	reservoirMaxSize int64
 	l3loop           L3Loop

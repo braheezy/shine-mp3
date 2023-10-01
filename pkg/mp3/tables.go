@@ -6,11 +6,11 @@
 package mp3
 
 var (
-	slen1Table = [16]int64{
+	sLen1Table = [16]int64{
 		0, 0, 0, 0, 3, 1, 1, 1,
 		2, 2, 2, 3, 3, 3, 4, 4,
 	}
-	slen2Table = [16]int64{
+	sLen2Table = [16]int64{
 		0, 1, 2, 3, 0, 1, 2, 3,
 		1, 2, 3, 1, 2, 3, 2, 3,
 	}
