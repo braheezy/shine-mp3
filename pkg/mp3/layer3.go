@@ -3,7 +3,6 @@ package mp3
 import (
 	"encoding/binary"
 	"io"
-	"unsafe"
 )
 
 const SHINE_MAX_SAMPLES = 1152
@@ -170,10 +169,10 @@ func (enc *Encoder) encodeBufferInternal(stride int) ([]uint8, int) {
 	return enc.bitstream.data, written
 }
 
-func (enc *Encoder) encodeBufferInterleaved(data *int16) ([]uint8, int) {
-	enc.buffer[0] = data
+func (enc *Encoder) EncodeBufferInterleaved(data []int16) ([]uint8, int) {
+	enc.buffer[0] = &data[0]
 	if enc.Wave.Channels == 2 {
-		enc.buffer[1] = (*int16)(unsafe.Add(unsafe.Pointer(data), unsafe.Sizeof(int16(0))*1))
+		enc.buffer[1] = &data[1]
 	}
 	return enc.encodeBufferInternal(int(enc.Wave.Channels))
 }
@@ -191,7 +190,7 @@ func (enc *Encoder) Write(out io.Writer, data []int16) error {
 		chunk := data[i:end]
 
 		// Encode and write the chunk to the output file.
-		data, written := enc.encodeBufferInterleaved(&chunk[0])
+		data, written := enc.EncodeBufferInterleaved(chunk)
 		err := binary.Write(out, binary.LittleEndian, data[:written])
 		if err != nil {
 			return err
