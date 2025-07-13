@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WAV to MP3</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        #download { display: none; }
+    </style>
+</head>
+<body>
+    <h1>WAV to MP3 Converter</h1>
+    <input type="file" accept=".wav" id="input">
+    <p id="status"></p>
+    <a id="download" download="output.mp3">Download MP3</a>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        // Initialize WASM
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("shine-mp3.wasm"), go.importObject)
+            .then(result => go.run(result.instance));
+
+        // Handle file selection
+        document.getElementById('input').onchange = async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('status');
+            const download = document.getElementById('download');
+            status.textContent = 'Converting...';
+            download.style.display = 'none';
+
+            try {
+                // Read and convert file
+                const data = new Uint8Array(await file.arrayBuffer());
+                const mp3Data = encodeMP3(data);
+
+                // Setup download
+                const blob = new Blob([mp3Data], {type: 'audio/mp3'});
+                download.href = URL.createObjectURL(blob);
+                download.download = file.name.replace('.wav', '.mp3');
+                download.style.display = 'block';
+                status.textContent = 'Done! Click the link to download.';
+            } catch (err) {
+                status.textContent = 'Error: ' + err;
+                console.error(err);
+            }
+        };
+    </script>
+</body>
+</html>
