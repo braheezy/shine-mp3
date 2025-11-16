@@ -181,9 +181,10 @@ func (enc *Encoder) encodeBufferInternal(stride int) ([]uint8, int) {
 }
 
 func (enc *Encoder) EncodeBufferInterleaved(data []int16) ([]uint8, int) {
-	enc.buffer[0] = &data[0]
+	enc.bufferData = data
+	enc.buffer[0] = 0
 	if enc.Wave.Channels == 2 {
-		enc.buffer[1] = &data[1]
+		enc.buffer[1] = 1
 	}
 	return enc.encodeBufferInternal(int(enc.Wave.Channels))
 }
@@ -193,16 +194,13 @@ func (enc *Encoder) Write(out io.Writer, data []int16) error {
 
 	samplesRead := len(data)
 	for i := 0; i < samplesRead; i += samples_per_pass * 2 {
-		end := i + samples_per_pass
-		if end > samplesRead {
-			end = samplesRead
-		}
-
-		chunk := data[i:end]
+		// Pass the slice from current position to the end to allow encoder
+		// to read ahead as needed
+		chunk := data[i:]
 
 		// Encode and write the chunk to the output file.
-		data, written := enc.EncodeBufferInterleaved(chunk)
-		err := binary.Write(out, binary.LittleEndian, data[:written])
+		outputData, written := enc.EncodeBufferInterleaved(chunk)
+		err := binary.Write(out, binary.LittleEndian, outputData[:written])
 		if err != nil {
 			return err
 		}

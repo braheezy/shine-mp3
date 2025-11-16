@@ -2,7 +2,6 @@ package mp3
 
 import (
 	"math"
-	"unsafe"
 )
 
 // subbandInitialize calculates the analysis filterbank coefficients and rounds to the  9th decimal
@@ -28,16 +27,19 @@ func (enc *Encoder) subbandInitialize() {
 // coefficients The windowed samples #z# is filtered by the digital filter matrix #filter# to produce the subband
 // samples #s#. This done by first selectively picking out values from the windowed samples, and then
 // multiplying them by the filter matrix, producing 32 subband samples.
-func (enc *Encoder) windowFilterSubband(buffer **int16, s *[SUBBAND_LIMIT]int32, ch int64, stride int64) {
+func (enc *Encoder) windowFilterSubband(s *[SUBBAND_LIMIT]int32, ch int64, stride int64) {
 	y := make([]int32, 64)
-	ptr := *buffer
 
 	// replace 32 oldest samples with 32 new samples
 	for i := int64(31); i >= 0; i-- {
-		enc.subband.X[ch][i+enc.subband.Off[ch]] = int32(*ptr) << 16
-		ptr = (*int16)(unsafe.Add(unsafe.Pointer(ptr), unsafe.Sizeof(int16(0))*uintptr(stride)))
+		// Bounds check: use 0 (silence) if we've run out of input data
+		var sample int16
+		if enc.buffer[ch] < len(enc.bufferData) {
+			sample = enc.bufferData[enc.buffer[ch]]
+		}
+		enc.subband.X[ch][i+enc.subband.Off[ch]] = int32(sample) << 16
+		enc.buffer[ch] += int(stride)
 	}
-	*buffer = ptr
 
 	for i := int64(63); i >= 0; i-- {
 		sValue := mul((enc.subband.X[ch][(enc.subband.Off[ch]+i+(0<<6))&(HAN_SIZE-1)]), enWindow[i+(0<<6)])

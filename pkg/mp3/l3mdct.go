@@ -50,8 +50,8 @@ func (enc *Encoder) mdctSub(stride int64) {
 
 			// polyphase filtering
 			for k := 0; k < 18; k += 2 {
-				enc.windowFilterSubband(&enc.buffer[ch], &enc.l3SubbandSamples[ch][gr+1][k], ch, stride)
-				enc.windowFilterSubband(&enc.buffer[ch], &enc.l3SubbandSamples[ch][gr+1][k+1], ch, stride)
+				enc.windowFilterSubband(&enc.l3SubbandSamples[ch][gr+1][k], ch, stride)
+				enc.windowFilterSubband(&enc.l3SubbandSamples[ch][gr+1][k+1], ch, stride)
 
 				// Compensate for inversion in the analysis filter
 				// (every odd index of band AND k)
