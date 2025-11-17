@@ -168,7 +168,8 @@ func (enc *Encoder) encodeBufferInternal(stride int) ([]uint8, int) {
 	// apply mdct to the polyphase output
 	enc.mdctSub(int64(stride))
 
-	// bit and noise allocation
+	// update psychoacoustic data and run bit/noise allocation
+	enc.updatePsychoModel()
 	enc.iterationLoop()
 
 	// write the frame to the bitstream
