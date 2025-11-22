@@ -109,7 +109,12 @@ func NewEncoder(sampleRate, channels int) *Encoder {
 	enc.Mpeg.Emphasis = NONE
 	enc.Mpeg.Copyright = 0
 	enc.Mpeg.Original = 1
-	enc.reservoirMaxSize = 0
+	if enc.Mpeg.Version == MPEG_I {
+		// MPEG-1 allows up to 511 bytes in the reservoir.
+		enc.reservoirMaxSize = 511 * 8
+	} else {
+		enc.reservoirMaxSize = 255 * 8
+	}
 	enc.reservoirSize = 0
 	enc.Mpeg.Layer = int64(LAYER_III)
 	enc.Mpeg.Crc = 0
