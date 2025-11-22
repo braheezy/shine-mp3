@@ -141,7 +141,8 @@ type Encoder struct {
 	meanBits         int64
 	ratio            PsyRatio
 	scaleFactor      ScaleFactor
-	buffer           [MAX_CHANNELS]*int16
+	buffer           [MAX_CHANNELS]int
+	bufferData       []int16
 	PerceptualEnergy [MAX_CHANNELS][MAX_GRANULES]float64
 	l3Encoding       [MAX_CHANNELS][MAX_GRANULES][GRANULE_SIZE]int64
 	l3SubbandSamples [MAX_CHANNELS][MAX_GRANULES + 1][18][SUBBAND_LIMIT]int32
