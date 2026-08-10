@@ -191,14 +191,13 @@ func (enc *Encoder) EncodeBufferInterleaved(data []int16) ([]uint8, int) {
 
 func (enc *Encoder) Write(out io.Writer, data []int16) error {
 	samples_per_pass := int(enc.samplesPerPass())
-
 	samplesRead := len(data)
-	for i := 0; i < samplesRead; i += samples_per_pass * 2 {
-		// Pass the slice from current position to the end to allow encoder
-		// to read ahead as needed
-		chunk := data[i:]
-
-		// Encode and write the chunk to the output file.
+	for i := 0; i < samplesRead; i += samples_per_pass * int(enc.Wave.Channels) {
+		end := i + samples_per_pass
+		if end > samplesRead {
+			end = samplesRead
+		}
+		chunk := data[i:end]
 		outputData, written := enc.EncodeBufferInterleaved(chunk)
 		err := binary.Write(out, binary.LittleEndian, outputData[:written])
 		if err != nil {
