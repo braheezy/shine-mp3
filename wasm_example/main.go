@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/go-audio/wav"
 )
 
-func encodeWAV(this js.Value, args []js.Value) interface{} {
+func encodeWAV(this js.Value, args []js.Value) any {
 	// Get WAV data from JavaScript
 	array := args[0]
 	wavData := make([]byte, array.Length())
@@ -19,7 +21,7 @@ func encodeWAV(this js.Value, args []js.Value) interface{} {
 	wavDecoder := wav.NewDecoder(wavReader)
 	wavBuffer, err := wavDecoder.FullPCMBuffer()
 	if err != nil {
-		return js.ValueOf(map[string]interface{}{
+		return js.ValueOf(map[string]any{
 			"error": err.Error(),
 		})
 	}
@@ -39,7 +41,7 @@ func encodeWAV(this js.Value, args []js.Value) interface{} {
 	// Encode to MP3
 	err = mp3Encoder.Write(&outBuffer, decodedData)
 	if err != nil {
-		return js.ValueOf(map[string]interface{}{
+		return js.ValueOf(map[string]any{
 			"error": err.Error(),
 		})
 	}
