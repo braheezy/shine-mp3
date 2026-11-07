@@ -140,7 +140,7 @@ func NewEncoder(sampleRate, channels int) *Encoder {
 		// MPEG 1
 		delta := 4 + 32
 		if enc.Wave.Channels == 1 {
-			delta = 4 + 9
+			delta = 4 + 17
 		}
 		enc.sideInfoLen = int64(8 * delta)
 	} else {
