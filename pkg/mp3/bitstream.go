@@ -57,3 +57,23 @@ func (bs *bitstream) putBits(val uint32, N uint) {
 func (bs *bitstream) getBitsCount() int {
 	return bs.dataPosition*8 + 32 - bs.cacheBits
 }
+
+// flush writes out what is left in the cache and empties it. A frame is a
+// whole number of bytes, but putBits writes out only whole 32-bit words,
+// so at the end of a frame its last bytes, up to three, are still here.
+func (bs *bitstream) flush() {
+	if bs.dataPosition+4 >= bs.dataSize {
+		newCapacity := bs.dataSize + (bs.dataSize >> 1)
+		newSlice := make([]byte, newCapacity)
+		copy(newSlice, bs.data)
+		bs.data = newSlice
+		bs.dataSize = newCapacity
+	}
+	for ; bs.cacheBits < 32; bs.cacheBits += 8 {
+		bs.data[bs.dataPosition] = uint8(bs.cache >> 24)
+		bs.dataPosition++
+		bs.cache <<= 8
+	}
+	bs.cache = 0
+	bs.cacheBits = 32
+}

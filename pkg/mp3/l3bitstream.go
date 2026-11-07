@@ -54,6 +54,12 @@ func (enc *Encoder) encodeMainData() {
 			enc.huffmanCodeBits(ix, granInfo)
 		}
 	}
+	// The frame's stuffing bits (reservoirFrameEnd): ancillary data after
+	// the last granule, which decoders skip. Ones, as stuffing always was.
+	for drain := sideInfo.ReservoirDrain; drain > 0; drain -= 32 {
+		n := min(drain, 32)
+		enc.bitstream.putBits(uint32(uint64(1)<<n-1), uint(n))
+	}
 }
 func (enc *Encoder) encodeSideInfo() {
 

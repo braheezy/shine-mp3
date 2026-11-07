@@ -43,9 +43,13 @@ func (enc *Encoder) reservoirAdjust(gi *GranuleInfo) {
 
 // Called after all granules in a frame have been allocated. Makes sure
 // that the reservoir size is within limits, possibly by adding stuffing
-// bits. Note that stuffing bits are added by increasing a granule's
-// part2_3_length. The bitstream formatter will detect this and write the
-// appropriate stuffing bits to the bitstream.
+// bits. The stuffing bits follow the frame's last granule as ancillary
+// data (ReservoirDrain, written by encodeMainData) and are counted in no
+// granule's part2_3_length: a decoder reads part2_3_length as scale
+// factors and Huffman codes, so stuffing inside it is read as count1
+// quadruples, the last of which can run past the end of the frame — a
+// frame some decoders (Symphonia, Chromium's) reject. Nor need the
+// stuffing then fit in a granule's 12-bit part2_3_length.
 func (enc *Encoder) reservoirFrameEnd() {
 	sideInfo := &enc.sideInfo
 
@@ -68,36 +72,5 @@ func (enc *Encoder) reservoirFrameEnd() {
 		enc.reservoirSize -= overBits
 	}
 
-	if stuffingBits != 0 {
-		// plan a: put all into the first granule
-		// This was preferred by someone designing a
-		// real-time decoder...
-		granInfo := &(sideInfo.Granules[0].Channels[0]).Tt
-		if granInfo.Part2_3Length+uint64(stuffingBits) < 4095 {
-			granInfo.Part2_3Length += uint64(stuffingBits)
-		} else {
-			// plan b: distribute throughout the granules
-			for gr := int64(0); gr < enc.Mpeg.GranulesPerFrame; gr++ {
-				for ch := int64(0); ch < enc.Wave.Channels; ch++ {
-					granInfo := &(sideInfo.Granules[gr].Channels[ch]).Tt
-					if stuffingBits == 0 {
-						break
-					}
-					extraBits := int64(4095 - granInfo.Part2_3Length)
-					bitsThisGranule := int64(0)
-					if extraBits < stuffingBits {
-						bitsThisGranule = extraBits
-					} else {
-						bitsThisGranule = stuffingBits
-					}
-					granInfo.Part2_3Length += uint64(bitsThisGranule)
-					stuffingBits -= bitsThisGranule
-				}
-			}
-			// If any stuffing bits remain, we elect to spill them
-			// into ancillary data. The bitstream formatter will do this if
-			// ReservoirDrain is set
-			sideInfo.ReservoirDrain = stuffingBits
-		}
-	}
+	sideInfo.ReservoirDrain = stuffingBits
 }

@@ -173,6 +173,8 @@ func (enc *Encoder) encodeBufferInternal(stride int) ([]uint8, int) {
 
 	// write the frame to the bitstream
 	enc.formatBitstream()
+	// and its last bytes, so that each call returns its frame whole
+	enc.bitstream.flush()
 
 	// Return data
 	written := enc.bitstream.dataPosition
