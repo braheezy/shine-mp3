@@ -218,8 +218,11 @@ func (enc *Encoder) calcPart2Length(gr int64, ch int64) int64 {
 // as determined by the psychoacoustic model. XMin(sb) = ratio(sb) * en(sb) / bw(sb)
 func calcXMin(ratio *PsyRatio, codeInfo *GranuleInfo, l3XMin *PsyXMin, gr int64, ch int64) {
 	for scaleFactorBand := int64(codeInfo.ScaleFactorBandMaxLen) - 1; scaleFactorBand >= 0; scaleFactorBand-- {
-		// XMin will always be zero with no psychoacoustic model...
-		l3XMin.L[gr][ch][scaleFactorBand] = 0
+		val := ratio.L[gr][ch][scaleFactorBand]
+		if val <= psychoEnergyFloor {
+			val = psychoEnergyFloor
+		}
+		l3XMin.L[gr][ch][scaleFactorBand] = val
 	}
 }
 
